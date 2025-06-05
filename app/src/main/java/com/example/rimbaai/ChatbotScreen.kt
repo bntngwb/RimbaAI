@@ -22,16 +22,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rimbaai.ui.theme.RimbaAITheme
-import kotlinx.coroutines.delay // Import delay untuk simulasi
 import kotlinx.coroutines.launch
 
+// enum class Sender dan data class ChatMessage tetap sama
 enum class Sender {
     USER, BOT
 }
@@ -43,69 +48,69 @@ data class ChatMessage(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+// Fungsi helper untuk mem-parsing Markdown sederhana (bold)
+fun parseMarkdownText(markdownText: String): AnnotatedString {
+    val boldPattern = Regex("""\*\*(.*?)\*\*""") // Mencocokkan teks di antara **
+    // Pola lain bisa ditambahkan di sini jika perlu (misal: *italic*)
+
+    return buildAnnotatedString {
+        var currentIndex = 0
+        boldPattern.findAll(markdownText).forEach { matchResult ->
+            val (startIndex, endIndex) = matchResult.range.first to matchResult.range.last
+            val textInsideBold = matchResult.groupValues[1] // Teks di dalam **...**
+
+            // Tambahkan teks sebelum bagian bold
+            if (startIndex > currentIndex) {
+                append(markdownText.substring(currentIndex, startIndex))
+            }
+
+            // Tambahkan teks bold
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(textInsideBold)
+            }
+            currentIndex = endIndex + 1
+        }
+
+        // Tambahkan sisa teks setelah bagian bold terakhir
+        if (currentIndex < markdownText.length) {
+            append(markdownText.substring(currentIndex))
+        }
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ChatbotScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    chatbotViewModel: ChatbotViewModel = viewModel()
 ) {
     val lightBackgroundColor = Color(0xFFF7F9FC)
-    val accentColor = Color(0xFFFF9800) // Oranye aksen
+    val accentColor = Color(0xFFFF9800)
     val textPrimaryColor = Color(0xFF273240)
     val userMessageColor = accentColor.copy(alpha = 0.15f)
-    val botMessageColor = Color.White // Atau Color(0xFFE8EAF6) untuk sedikit beda
+    val botMessageColor = Color.White
 
     var inputText by remember { mutableStateOf("") }
-    val messages = remember { mutableStateListOf<ChatMessage>() } // Nama variabel kembali ke 'messages'
+    val messages = chatbotViewModel.messages
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    var isLoadingResponse by remember { mutableStateOf(false) }
 
-    // Tambahkan pesan sambutan dari bot jika messages kosong
-    LaunchedEffect(Unit) {
-        if (messages.isEmpty()) {
-            messages.add(
-                ChatMessage(
-                    text = "Halo! Saya Rimba, asisten AI Anda. Ada yang bisa saya bantu terkait dunia satwa liar?",
-                    sender = Sender.BOT
-                )
-            )
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
         }
     }
 
-    val sendMessage = {
+    val handleSendMessage = {
         if (inputText.isNotBlank()) {
-            val userMessageText = inputText // Simpan teks sebelum dikosongkan
-            val userMessage = ChatMessage(text = userMessageText, sender = Sender.USER)
-            messages.add(userMessage)
+            val currentMessageText = inputText
+            chatbotViewModel.sendMessage(currentMessageText)
             inputText = ""
             keyboardController?.hide()
             focusManager.clearFocus()
-
-            isLoadingResponse = true // Tampilkan indikator loading
-
-            coroutineScope.launch {
-                if(messages.isNotEmpty()){
-                    listState.animateScrollToItem(messages.size -1)
-                }
-            }
-
-            // Kembali ke Simulasi respons dari Bot
-            coroutineScope.launch {
-                delay(1500) // Tunda untuk simulasi waktu respons jaringan
-                val botResponseText = when {
-                    userMessageText.lowercase().contains("harimau") -> "Harimau adalah kucing terbesar di dunia! Harimau Sumatera adalah subspesies yang hanya ditemukan di Pulau Sumatera, Indonesia, dan statusnya kritis."
-                    userMessageText.lowercase().contains("makanan komodo") -> "Komodo adalah karnivora. Makanan utamanya adalah rusa, babi hutan, dan kerbau air. Mereka juga bisa memakan bangkai."
-                    userMessageText.lowercase().contains("hello") || userMessageText.lowercase().contains("hai") -> "Hai juga! Ada yang ingin kamu ketahui tentang satwa?"
-                    else -> "Maaf, saya belum bisa menjawab pertanyaan itu. Mungkin coba pertanyaan lain tentang satwa liar?"
-                }
-                messages.add(ChatMessage(text = botResponseText, sender = Sender.BOT))
-                isLoadingResponse = false // Sembunyikan indikator loading
-                if(messages.isNotEmpty()){
-                    listState.animateScrollToItem(messages.size -1)
-                }
-            }
         }
     }
 
@@ -139,8 +144,8 @@ fun ChatbotScreen(
             MessageInputBar(
                 inputText = inputText,
                 onTextChange = { inputText = it },
-                onSendMessage = sendMessage,
-                isLoading = isLoadingResponse,
+                onSendMessage = handleSendMessage,
+                isLoading = messages.lastOrNull()?.id == "typing_indicator",
                 accentColor = accentColor
             )
         }
@@ -153,20 +158,13 @@ fun ChatbotScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(messages, key = { it.id }) { message -> // Menggunakan 'messages'
+            items(messages, key = { it.id }) { message ->
                 ChatMessageBubble(
                     message = message,
                     userMessageColor = userMessageColor,
                     botMessageColor = botMessageColor,
                     textPrimaryColor = textPrimaryColor
                 )
-            }
-            if (isLoadingResponse) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = accentColor, strokeWidth = 3.dp)
-                    }
-                }
             }
         }
     }
@@ -198,9 +196,10 @@ fun ChatMessageBubble(
                 .background(backgroundColor)
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
+            // Gunakan fungsi parseMarkdownText di sini
             Text(
-                text = message.text,
-                color = textPrimaryColor,
+                text = parseMarkdownText(message.text), // <--- PERUBAHAN DI SINI
+                color = textPrimaryColor, // Warna teks mungkin perlu disesuaikan jika teks bold memiliki warna berbeda
                 fontSize = 15.sp
             )
         }
@@ -293,4 +292,28 @@ fun ChatbotScreenPreview() {
     }
 }
 
-// Preview lainnya bisa Anda tambahkan kembali jika diperlukan
+@Preview(showBackground = true)
+@Composable
+fun ChatMessageBubblePreview_BotBold() {
+    RimbaAITheme {
+        ChatMessageBubble(
+            message = ChatMessage(text = "Ini adalah **teks tebal** dari bot.", sender = Sender.BOT),
+            userMessageColor = Color.LightGray,
+            botMessageColor = Color.White,
+            textPrimaryColor = Color.Black
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ChatMessageBubblePreview_UserNoBold() {
+    RimbaAITheme {
+        ChatMessageBubble(
+            message = ChatMessage(text = "Ini teks biasa dari user.", sender = Sender.USER),
+            userMessageColor = Color.Cyan.copy(alpha=0.2f),
+            botMessageColor = Color.White,
+            textPrimaryColor = Color.Black
+        )
+    }
+}
