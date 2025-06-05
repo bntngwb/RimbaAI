@@ -11,6 +11,7 @@ activityCompose = "1.8.0"
 composeBom = "2024.09.00"
 androidxMaterialIcons = "1.6.7" # Version for Material Icons
 androidxNavigationCompose = "2.7.7"
+androidxCameraX = "1.3.4" # VERSI UNTUK CAMERAX (pastikan ini versi stabil terbaru)
 
 [libraries]
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigationCompose" }
@@ -30,6 +31,12 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "androidxMaterialIcons" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "androidxMaterialIcons" }
+
+# LIBRARY CAMERAX
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "androidxCameraX" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "androidxCameraX" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "androidxCameraX" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "androidxCameraX" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

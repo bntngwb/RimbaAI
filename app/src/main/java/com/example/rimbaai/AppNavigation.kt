@@ -12,7 +12,8 @@ object AppDestinations {
     const val ENCYCLOPEDIA_ROUTE = "encyclopedia"
     const val CHATBOT_ROUTE = "chatbot"
     const val QUIZ_LANDING_ROUTE = "quiz_landing"
-    const val QUIZ_GAME_ROUTE = "quiz_game" // Rute BARU untuk layar permainan kuis
+    const val QUIZ_GAME_ROUTE = "quiz_game"
+    const val CAMERASCAN_ROUTE = "camerascan" // <-- RUTE BARU
     // const val HOW_TO_PLAY_ROUTE = "how_to_play" // Siapkan rute untuk cara bermain nanti
 }
 
@@ -28,8 +29,7 @@ fun AppNavHost(
         composable(AppDestinations.HOME_ROUTE) {
             HomeScreen(
                 onNavigateToIdentification = {
-                    // TODO: Navigasi ke layar identifikasi
-                    println("Tombol Identifikasi diklik dari NavHost!")
+                    navController.navigate(AppDestinations.CAMERASCAN_ROUTE) // <-- NAVIGASI KE CAMERASCAN
                 },
                 onNavigateToEncyclopedia = {
                     navController.navigate(AppDestinations.ENCYCLOPEDIA_ROUTE)
@@ -43,53 +43,48 @@ fun AppNavHost(
             )
         }
         composable(AppDestinations.ENCYCLOPEDIA_ROUTE) {
-            EncyclopediaScreen( // Pastikan EncyclopediaScreen.kt sudah ada dan bisa diimpor
+            EncyclopediaScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
             )
         }
         composable(AppDestinations.CHATBOT_ROUTE) {
-            ChatbotScreen( // Pastikan ChatbotScreen.kt sudah ada dan bisa diimpor
+            ChatbotScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
             )
         }
         composable(AppDestinations.QUIZ_LANDING_ROUTE) {
-            QuizLandingScreen( // Pastikan QuizLandingScreen.kt sudah ada dan bisa diimpor
+            QuizLandingScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
                 onStartQuiz = {
-                    // Navigasi ke layar permainan kuis yang sebenarnya
                     navController.navigate(AppDestinations.QUIZ_GAME_ROUTE)
                 },
                 onShowHowToPlay = {
-                    // TODO: Navigasi ke layar cara bermain atau tampilkan dialog/bottom sheet
-                    // navController.navigate(AppDestinations.HOW_TO_PLAY_ROUTE)
                     println("Tombol Cara Bermain diklik!")
                 }
             )
         }
-        // Composable baru untuk QuizGameScreen
         composable(AppDestinations.QUIZ_GAME_ROUTE) {
-            QuizGameScreen( // Pastikan QuizGameScreen.kt sudah ada dan bisa diimpor
+            QuizGameScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
                 onQuizComplete = { score, totalQuestions ->
-                    // Setelah kuis selesai, kembali ke QuizLandingScreen
-                    // Anda bisa juga menampilkan skor di sini atau meneruskannya ke layar lain jika perlu
                     println("Kuis Selesai! Skor: $score/$totalQuestions")
-                    // Kembali ke QuizLandingScreen. inclusive = false berarti QuizLandingScreen tidak di-pop.
                     navController.popBackStack(AppDestinations.QUIZ_LANDING_ROUTE, inclusive = false)
-                    // Atau jika ingin kembali ke HomeScreen setelah kuis:
-                    // navController.popBackStack(AppDestinations.HOME_ROUTE, inclusive = false)
-                    // Atau navigasi ke layar skor khusus jika ada:
-                    // navController.navigate("score_screen/$score/$totalQuestions") {
-                    //     popUpTo(AppDestinations.QUIZ_LANDING_ROUTE) { inclusive = true }
-                    // }
+                }
+            )
+        }
+        // Composable baru untuk CameraScanScreen
+        composable(AppDestinations.CAMERASCAN_ROUTE) {
+            CameraScanScreen( // Pastikan CameraScanScreen.kt sudah ada dan bisa diimpor
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
