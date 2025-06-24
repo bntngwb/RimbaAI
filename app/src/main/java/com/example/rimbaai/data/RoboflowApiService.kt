@@ -11,20 +11,22 @@ import retrofit2.http.POST
 import retrofit2.http.Url
 import java.util.concurrent.TimeUnit
 
-// Konstanta dari MainActivity.kt
-const val ROBOFLOW_API_KEY = "0IN6Y4AvxRGsjdDj2aRe"
+// --- PERUBAHAN PADA KONSTANTA ---
+// Konstanta dari Roboflow API yang BARU
+const val ROBOFLOW_API_KEY = "WbLiZbHUlbYq0d9joo3t"
 const val ROBOFLOW_BASE_URL = "https://serverless.roboflow.com/"
-const val ROBOFLOW_MODEL_ID = "animal-detection-jvsw5/1"
-const val ROBOFLOW_INFERENCE_SIZE = 640.0
+const val ROBOFLOW_MODEL_ID = "animal-object-detection-ik1kk-o3k4a/2"
+const val ROBOFLOW_INFERENCE_SIZE = 640.0 // Ini mungkin tidak lagi digunakan secara eksplisit,
+// tapi kita biarkan saja jika ada logika lain yang bergantung padanya.
 
 interface RoboflowApiService {
     @POST
-    // --- PERUBAHAN DI SINI ---
-    @Headers("Content-Type: application/x-www-form-urlencoded") // Dikembalikan sesuai MainActivity.kt Anda
+    // Menggunakan application/x-www-form-urlencoded seperti sebelumnya.
+    @Headers("Content-Type: application/x-www-form-urlencoded")
     suspend fun detectObjects(@Url url: String, @Body imageBase64: String): RoboflowResponse
 }
 
-// Data Class untuk Response API Roboflow (tetap sama)
+// Data Class untuk Response API Roboflow (Struktur ini seharusnya tetap sama)
 data class RoboflowResponse(
     @SerializedName("predictions") val predictions: List<Prediction>
 )
@@ -38,7 +40,7 @@ data class Prediction(
     @SerializedName("class") val `class`: String
 )
 
-// Object RetrofitClientRoboflow (tetap sama)
+// Object RetrofitClientRoboflow (Tidak ada perubahan di sini)
 object RetrofitClientRoboflow {
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(HttpLoggingInterceptor().apply {
